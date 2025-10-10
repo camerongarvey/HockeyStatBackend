@@ -1,3 +1,6 @@
 # created by virtualenv automatically
 data/*
 output_data/*
+__pycache__/*
+.venv/*
+.DS_Store
