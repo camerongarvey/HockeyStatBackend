@@ -28,14 +28,13 @@ def update_data(key=None):
     data_sources = read_csv_to_dict(filename)
 
     for team in data_sources.keys():
-
         if not key or team == key:
             link = data_sources[team]
 
             formatted_team = team.replace("_", " ")
             print(f'Looking at team: {formatted_team}, at the link: {link}')
 
-            scrape(link, team, formatted_team, "South Island League U18 Exhibition")
+            scrape(link, team, formatted_team)
 
             process_data.run(team, formatted_team)
 

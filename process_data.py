@@ -2,8 +2,25 @@ import os
 from html.parser import HTMLParser
 import csv
 from pathlib import Path
+import fill_roaster
+import csv
+
+
+def read_csv_to_dict(filename):
+    data_dict = {}
+    with open(filename, mode='r', newline='', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            if len(row) >= 2:
+                key = row[0]
+                value = row[1]
+                data_dict[key] = value
+    return data_dict
+
 
 folder_path = "output_data"
+roaster_path = "HockeyRoasters.csv"
+
 
 class MyParser(HTMLParser):
     def __init__(self):
@@ -12,7 +29,7 @@ class MyParser(HTMLParser):
 
     def handle_data(self, data):
         stripped = data.strip()
-        if stripped: 
+        if stripped:
             self.data_list.append(stripped)
 
 
@@ -137,9 +154,8 @@ def get_player_data(data, players, player_names, my_team):
 
 
 def get_player_name(raw):
-    parts = raw.replace("-"," ").split()
+    parts = raw.split()
     name = " ".join(parts[:-1])
-
     return name
 
 
@@ -155,8 +171,19 @@ def run(input_folder, team):
     my_team = team
     files = os.listdir(path)
 
+    data_sources = read_csv_to_dict(roaster_path)
+
+    roaster = fill_roaster.run(data_sources.get(input_folder))
     players = []
     player_names = []
+
+    for player in roaster:
+        name = player[0]
+        if player[1] != "0":
+            name += " #" + player[1]
+        new_player = Player(name)
+        players.append(new_player)
+        player_names.append(player[0])
 
     for file in files:
         with open(path + "/" + file, "rb") as f:
@@ -170,9 +197,6 @@ def run(input_folder, team):
                 print(f"As a result file: {file} had has been skipped")
 
             f.close()
-
-
-
     stats = []
     stats.append(["Name", "Goals", "Assists", "Points", "Penalties", "PIM"])
 

@@ -32,6 +32,9 @@ async def scrape_game(context, url, row_index, output_folder, schedule_type):
                 await menu_item.first.click(force=True)
                 await page.wait_for_timeout(1500)  # wait for games to load
 
+        await page.locator("button:has-text('Show all upcoming games')").click()
+        await page.wait_for_timeout(1500)
+
         await page.locator("button:has-text('Show all games')").click()
         await page.wait_for_timeout(1500)
 
@@ -83,12 +86,15 @@ async def download_game_modals_optimized(url, output_folder='data', schedule_typ
             await dropdown.click()
 
             # Step 2: find the floating menu item by visible text
-            menu_item = page.locator(f"text={schedule_type}")  # or 'li:has-text(...)' depending on the structure
+            menu_item = page.locator(f"text={schedule_type}")
             if await menu_item.count() == 0:
                 print(f"[Warning] Schedule '{schedule_type}' not found, defaulting to Regular Season")
             else:
                 await menu_item.first.click(force=True)
                 await page.wait_for_timeout(1500)  # wait for games to load
+        await page.locator("button:has-text('Show all upcoming games')").click()
+        await page.wait_for_timeout(1500)
+
         await page.locator("button:has-text('Show all games')").click()
         await page.wait_for_timeout(1500)
 
