@@ -1,7 +1,5 @@
 import os
 from html.parser import HTMLParser
-import csv
-from pathlib import Path
 import fill_roaster
 import csv
 
@@ -33,7 +31,7 @@ class MyParser(HTMLParser):
             self.data_list.append(stripped)
 
 
-class Player():
+class Player:
     def __init__(self, name):
         self.name = name
         self.goals = 0
@@ -61,7 +59,11 @@ class Player():
         return f"{self.name},{self.goals}, {self.assists}, {self.points}, {self.penalties}, {self.pim}"
 
 
-def get_player_data(data, players, player_names, my_team):
+def does_player_exist(name, players):
+    return any(name in player.name for player in players)
+
+
+def get_player_data(data, players, my_team):
     home_team = home_or_away(data[12], my_team)
     home_score, away_score = 0, 0
 
@@ -95,26 +97,26 @@ def get_player_data(data, players, player_names, my_team):
 
             if proceed:
                 name = get_player_name(new_data.pop(0))
-                if name not in player_names:
+                if not does_player_exist(name, players):
                     new_player = Player(name)
-                    new_player.add_goal()
                     players.append(new_player)
-                    player_names.append(name)
-                else:
-                    players[player_names.index(name)].add_goal()
+
+                for player in players:
+                    if name in player.name:
+                        player.add_goal()
 
                 if score_index == 3:
                     assists = new_data.pop(0).split(',')
 
                     for assist in assists:
                         name = get_player_name(assist)
-                        if name not in player_names:
+                        if not does_player_exist(name, players):
                             new_player = Player(name)
-                            new_player.add_assist()
                             players.append(new_player)
-                            player_names.append(name)
-                        else:
-                            players[player_names.index(name)].add_assist()
+
+                        for player in players:
+                            if name in player.name:
+                                player.add_assist()
 
         else:
             new_data.pop(0)
@@ -139,15 +141,13 @@ def get_player_data(data, players, player_names, my_team):
 
             if home_or_away(team, my_team):
 
-                if name not in player_names:
+                if not does_player_exist(name, players):
                     new_player = Player(name)
-                    new_player.add_penalties(length)
                     players.append(new_player)
-                    player_names.append(name)
-                else:
-                    players[player_names.index(name)].add_penalties(length)
 
-
+                for player in players:
+                    if name in player.name:
+                        player.add_penalties(length)
 
         else:
             new_data.pop(0)
@@ -175,7 +175,6 @@ def run(input_folder, team):
 
     roaster = fill_roaster.run(data_sources.get(input_folder))
     players = []
-    player_names = []
 
     for player in roaster:
         name = player[0]
@@ -183,7 +182,6 @@ def run(input_folder, team):
             name += " #" + player[1]
         new_player = Player(name)
         players.append(new_player)
-        player_names.append(player[0])
 
     for file in files:
         with open(path + "/" + file, "rb") as f:
@@ -191,14 +189,13 @@ def run(input_folder, team):
             parser.feed(str(f.read(), "utf-8"))
             data = parser.data_list
             try:
-                get_player_data(data, players, player_names, my_team)
+                get_player_data(data, players, my_team)
             except Exception as e:
-                print(f"The Error {e} occured while processing {file}")
+                print(f"The Error {e} occurred while processing {file}")
                 print(f"As a result file: {file} had has been skipped")
 
             f.close()
-    stats = []
-    stats.append(["Name", "Goals", "Assists", "Points", "Penalties", "PIM"])
+    stats = [["Name", "Goals", "Assists", "Points", "Penalties", "PIM"]]
 
     for player in players:
         stats.append([player.name, player.goals, player.assists, player.points, player.penalties, player.pim])
@@ -210,3 +207,5 @@ def run(input_folder, team):
     with open(file_path, mode="w", newline="") as file:
         writer = csv.writer(file)
         writer.writerows(stats)
+
+    print(does_player_exist("CAMERON GARVEY", players))
