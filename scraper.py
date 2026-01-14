@@ -32,9 +32,6 @@ async def scrape_game(context, url, row_index, output_folder, schedule_type):
                 await menu_item.first.click(force=True)
                 await page.wait_for_timeout(1500)  # wait for games to load
 
-        await page.locator("button:has-text('Show all upcoming games')").click()
-        await page.wait_for_timeout(1500)
-
         await page.locator("button:has-text('Show all games')").click()
         await page.wait_for_timeout(1500)
 
@@ -92,8 +89,6 @@ async def download_game_modals_optimized(url, output_folder='data', schedule_typ
             else:
                 await menu_item.first.click(force=True)
                 await page.wait_for_timeout(1500)  # wait for games to load
-        await page.locator("button:has-text('Show all upcoming games')").click()
-        await page.wait_for_timeout(1500)
 
         await page.locator("button:has-text('Show all games')").click()
         await page.wait_for_timeout(1500)

@@ -45,7 +45,6 @@ def refresh(team: str = Query(..., description="Team name"), password: str = Que
 
 @app.get("/ping")
 def ping():
-    print("pong")
     return {"ping": "pong"}
 
 

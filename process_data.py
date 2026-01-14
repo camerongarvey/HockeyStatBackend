@@ -207,5 +207,3 @@ def run(input_folder, team):
     with open(file_path, mode="w", newline="") as file:
         writer = csv.writer(file)
         writer.writerows(stats)
-
-    print(does_player_exist("CAMERON GARVEY", players))
