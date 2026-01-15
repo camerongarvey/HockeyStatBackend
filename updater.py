@@ -15,9 +15,9 @@ def read_csv_to_dict(filename):
                 data_dict[key] = value
     return data_dict
 
-def scrape(link, output, team, tag=None):
+def scrape(link, output, tag=None):
     try:
-        scraper.run(link, output, team, tag)
+        scraper.run(link, output, tag)
         return
     except Exception as e:
         print(e)
@@ -36,7 +36,8 @@ def update_data(key=None):
 
             scrape(link, team, formatted_team)
 
-            process_data.run(team, formatted_team)
+            process_data.run(team, formatted_team, "league/")
+            process_data.run(team, formatted_team, "complete/")
 
 if __name__ == '__main__':
     if len(argv) > 1:

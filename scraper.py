@@ -2,6 +2,7 @@ import asyncio
 import os
 import re
 import time
+
 from playwright.async_api import async_playwright
 
 MAX_CONCURRENT_TASKS = 20
@@ -14,23 +15,21 @@ async def block_assets(route):
         await route.continue_()
 
 
-async def scrape_game(context, url, row_index, output_folder, schedule_type):
+async def scrape_game(context, url, row_index, league_output_folder, complete_output_folder, schedule_type):
     page = await context.new_page()
     try:
         await page.goto(url, wait_until='domcontentloaded')
 
         if schedule_type:
-            # Step 1: click the dropdown (visible text triggers the menu)
-            dropdown = page.locator("text=Regular Season")  # adjust selector if needed
+            dropdown = page.locator("text=Regular Season")
             await dropdown.click()
 
-            # Step 2: find the floating menu item by visible text
-            menu_item = page.locator(f"text={schedule_type}")  # or 'li:has-text(...)' depending on the structure
+            menu_item = page.locator(f"text={schedule_type}")
             if await menu_item.count() == 0:
                 print(f"[Warning] Schedule '{schedule_type}' not found, defaulting to Regular Season")
             else:
                 await menu_item.first.click(force=True)
-                await page.wait_for_timeout(1500)  # wait for games to load
+                await page.wait_for_timeout(1500)
 
         await page.locator("button:has-text('Show all games')").click()
         await page.wait_for_timeout(1500)
@@ -56,9 +55,14 @@ async def scrape_game(context, url, row_index, output_folder, schedule_type):
         match = re.search(r'Game\s+(\w+-\d+)', heading or "")
         game_id = match.group(1) if match else f"game_{row_index + 1}"
 
-        filepath = os.path.join(output_folder, f"{game_id}.html")
+        filepath = os.path.join(complete_output_folder, f"{game_id}.html")
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(modal_html)
+
+        if "Regular Season" in schedule_type:
+            filepath = os.path.join(league_output_folder, f"{game_id}.html")
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write(modal_html)
 
     except Exception as e:
         print(f"[Row {row_index}] Error: {e}")
@@ -66,9 +70,7 @@ async def scrape_game(context, url, row_index, output_folder, schedule_type):
         await page.close()
 
 
-async def download_game_modals_optimized(url, output_folder='data', schedule_type=None):
-    os.makedirs(output_folder, exist_ok=True)
-
+async def download_game_modals_optimized(url, league_output_folder, complete_output_folder, schedule_type=None):
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         context = await browser.new_context()
@@ -78,11 +80,9 @@ async def download_game_modals_optimized(url, output_folder='data', schedule_typ
         await page.goto(url, wait_until='domcontentloaded')
 
         if schedule_type:
-            # Step 1: click the dropdown (visible text triggers the menu)
-            dropdown = page.locator("text=Regular Season")  # adjust selector if needed
+            dropdown = page.locator("text=Regular Season")
             await dropdown.click()
 
-            # Step 2: find the floating menu item by visible text
             menu_item = page.locator(f"text={schedule_type}")
             if await menu_item.count() == 0:
                 print(f"[Warning] Schedule '{schedule_type}' not found, defaulting to Regular Season")
@@ -100,7 +100,7 @@ async def download_game_modals_optimized(url, output_folder='data', schedule_typ
 
         async def bounded_scrape(i):
             async with sem:
-                await scrape_game(context, url, i, output_folder, schedule_type)
+                await scrape_game(context, url, i, league_output_folder, complete_output_folder, schedule_type)
 
         tasks = [bounded_scrape(i) for i in range(row_count)]
         await asyncio.gather(*tasks)
@@ -109,10 +109,39 @@ async def download_game_modals_optimized(url, output_folder='data', schedule_typ
         await browser.close()
 
 
-def run(url, output, team, schedule_type=None):
-    output_folder = "data/" + str(output)
-    os.makedirs(output_folder, exist_ok=True)
-    for file in os.listdir(output_folder):
-        os.remove(os.path.join(output_folder, file))
+async def find_schedules(url):
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        context = await browser.new_context()
+        await context.route("**/*", block_assets)
 
-    asyncio.run(download_game_modals_optimized(url, output_folder, schedule_type))
+        page = await context.new_page()
+        await page.goto(url, wait_until='domcontentloaded')
+
+        dropdown = page.locator("text=Regular Season")
+        await dropdown.click()
+
+        menu_item = page.locator(f"text=VIAHA")
+
+        leagues = await menu_item.all_text_contents()
+        del leagues[0] #first item is duplicate
+        return leagues
+
+
+
+def run(url, output, schedule_type=None):
+    leagues = asyncio.run(find_schedules(url))
+    print(leagues)
+
+    league_output_folder = "data/" + "league/" + str(output)
+    os.makedirs(league_output_folder, exist_ok=True)
+    for file in os.listdir(league_output_folder):
+        os.remove(os.path.join(league_output_folder, file))
+
+    complete_output_folder = "data/" + "complete/" + str(output)
+    os.makedirs(complete_output_folder, exist_ok=True)
+    for file in os.listdir(complete_output_folder):
+        os.remove(os.path.join(complete_output_folder, file))
+
+    for league in leagues:
+        asyncio.run(download_game_modals_optimized(url, league_output_folder, complete_output_folder, schedule_type=league))

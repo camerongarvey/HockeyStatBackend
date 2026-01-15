@@ -16,7 +16,7 @@ def read_csv_to_dict(filename):
     return data_dict
 
 
-folder_path = "output_data"
+folder_path = "output_data/"
 roaster_path = "HockeyRoasters.csv"
 
 
@@ -166,8 +166,8 @@ def home_or_away(line, team) -> bool:
     return True
 
 
-def run(input_folder, team):
-    path = "data/" + str(input_folder)
+def run(input_folder, team, modifier="league/"):
+    path = "data/" + modifier + str(input_folder)
     my_team = team
     files = os.listdir(path)
 
@@ -200,9 +200,9 @@ def run(input_folder, team):
     for player in players:
         stats.append([player.name, player.goals, player.assists, player.points, player.penalties, player.pim])
 
-    os.makedirs(folder_path, exist_ok=True)
+    os.makedirs(folder_path + modifier, exist_ok=True)
 
-    file_path = (os.path.join(folder_path, input_folder) + ".csv")
+    file_path = (os.path.join(folder_path, modifier, input_folder) + ".csv")
 
     with open(file_path, mode="w", newline="") as file:
         writer = csv.writer(file)
