@@ -15,20 +15,22 @@ def read_csv_to_dict(filename):
                 data_dict[key] = value
     return data_dict
 
-def scrape(link, output, tag=None):
+
+def scrape(link, output, team):
     try:
-        scraper.run(link, output, tag)
+        scraper.run(link, output)
         return
     except Exception as e:
         print(e)
-        scrape(link, team, tag)
+        scrape(link, output, team)
+
 
 def update_data(key=None):
     filename = "HockeyBackend.csv"
     data_sources = read_csv_to_dict(filename)
 
     for team in data_sources.keys():
-        if not key or team == key:
+        if not key or key in team:
             link = data_sources[team]
 
             formatted_team = team.replace("_", " ")
@@ -38,6 +40,7 @@ def update_data(key=None):
 
             process_data.run(team, formatted_team, "league/")
             process_data.run(team, formatted_team, "complete/")
+
 
 if __name__ == '__main__':
     if len(argv) > 1:

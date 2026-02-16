@@ -160,6 +160,8 @@ def get_player_name(raw):
 
 
 def home_or_away(line, team) -> bool:
+    if "RACQUET" not in team and "RACQUET" in line:
+        return False
     for word in team.split(" "):
         if word not in line:
             return False

@@ -129,7 +129,7 @@ async def find_schedules(url):
 
 
 
-def run(url, output, schedule_type=None):
+def run(url, output):
     leagues = asyncio.run(find_schedules(url))
     print(leagues)
 
